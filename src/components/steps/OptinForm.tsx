@@ -36,7 +36,7 @@ export default function OptinForm({
         Antes de empezar, déjanos tus datos para personalizar tu onboarding.
       </p>
       <form onSubmit={submit} className="mt-8 space-y-5">
-        <Field label="Tu nombre">
+        <Field label="Tu nombre *">
           <input
             className={inputClass}
             value={nombre}
@@ -45,7 +45,10 @@ export default function OptinForm({
             required
           />
         </Field>
-        <Field label="Correo">
+        <Field
+          label="Correo de trabajo *"
+          hint="Usa el correo que ocupas para trabajo: ahí te compartiremos tu documento con toda la información y tu carpeta de Drive."
+        >
           <input
             className={inputClass}
             type="email"

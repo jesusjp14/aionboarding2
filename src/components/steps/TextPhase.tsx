@@ -87,15 +87,19 @@ export default function TextPhase({
       <p className="mt-2 text-slate-400">
         Completa con calma. Esto se suma a lo que conversaste con Camila para armar tu documento.
       </p>
+      <p className="mt-3 rounded-lg border border-indigo-400/20 bg-indigo-500/10 px-3 py-2 text-sm text-indigo-200">
+        Todos los campos son obligatorios. Si aún no puedes compartir alguno, escribe <b>NA</b> y lo completamos luego.
+      </p>
 
       <form onSubmit={submit} className="mt-8 space-y-5">
         {FIELDS.map((f) => (
-          <Field key={f.name} label={f.label}>
+          <Field key={f.name} label={`${f.label} *`}>
             <textarea
               className={`${inputClass} min-h-[90px] resize-y`}
               value={values[f.name] ?? ""}
               onChange={(e) => setValues((v) => ({ ...v, [f.name]: e.target.value }))}
               placeholder={f.placeholder}
+              required
             />
           </Field>
         ))}

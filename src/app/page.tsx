@@ -55,7 +55,7 @@ export default function Home() {
         <ContentScreen
           title="Así trabajaremos juntos"
           body={
-            "1. Conversas con Camila por voz sobre tu negocio.\n2. Completas un chat corto con datos exactos.\n3. Generamos tu documento de onboarding.\n4. Agendas tu reunión de planificación.\n\n¡Empecemos!"
+            "1. Conversas con Camila por voz sobre tu negocio.\n2. Completas un cuestionario corto con datos exactos.\n3. Generamos tu documento de onboarding.\n4. Agendas tu reunión de planificación.\n\n¡Empecemos!"
           }
           videoUrl={null}
           onNext={() => setStep("orb")}
