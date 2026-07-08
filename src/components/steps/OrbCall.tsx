@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { RetellWebClient } from "retell-client-js-sdk";
 import { Card, Button } from "@/components/ui";
 import Confetti from "@/components/Confetti";
+import ProgressBar from "@/components/ProgressBar";
 import { Session } from "@/lib/steps";
 
 type Status = "idle" | "connecting" | "active" | "analyzing" | "ready" | "error";
@@ -229,6 +230,11 @@ export default function OrbCall({
         <div className="mt-6 flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-4 py-1.5">
           <span className="text-sm font-medium text-slate-300">{statusText[status]}</span>
         </div>
+        {status === "analyzing" && (
+          <div className="mt-5 w-full max-w-xs">
+            <ProgressBar label="No cierres esta ventana, estamos guardando tu conversación…" />
+          </div>
+        )}
         {error && <p className="mt-3 text-sm text-rose-400">{error}</p>}
       </div>
 

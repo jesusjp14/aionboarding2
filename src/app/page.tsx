@@ -17,9 +17,19 @@ export default function Home() {
   const patch = (p: Partial<Session>) =>
     setSession((s) => (s ? { ...s, ...p } : s));
 
+  const ORDER: StepId[] = [
+    "optin", "bienvenida", "proceso", "orb", "texto", "doc", "agendar", "gracias",
+  ];
+  const goBack = () => {
+    const i = ORDER.indexOf(step);
+    if (i > 0) setStep(ORDER[i - 1]);
+  };
+  // Sin botón atrás en el primer paso ni en el final.
+  const showBack = step !== "optin" && step !== "gracias";
+
   return (
     <main className="relative min-h-screen px-4 py-10 sm:py-16">
-      {session && <Stepper current={step} />}
+      {session && <Stepper current={step} onBack={showBack ? goBack : undefined} />}
 
       {step === "optin" && (
         <OptinForm

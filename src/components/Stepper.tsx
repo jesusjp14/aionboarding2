@@ -1,10 +1,24 @@
 "use client";
 import { STEPS, StepId } from "@/lib/steps";
 
-export default function Stepper({ current }: { current: StepId }) {
+export default function Stepper({
+  current,
+  onBack,
+}: {
+  current: StepId;
+  onBack?: () => void;
+}) {
   const idx = STEPS.findIndex((s) => s.id === current);
   return (
     <div className="w-full max-w-2xl mx-auto mb-10">
+      {onBack && (
+        <button
+          onClick={onBack}
+          className="mb-3 inline-flex items-center gap-1 text-xs font-medium text-slate-400 transition hover:text-slate-200"
+        >
+          ← Volver al paso anterior
+        </button>
+      )}
       <div className="flex items-center gap-1.5">
         {STEPS.map((s, i) => (
           <div key={s.id} className="flex-1">

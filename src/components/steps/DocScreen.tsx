@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { Card, Button } from "@/components/ui";
+import ProgressBar from "@/components/ProgressBar";
 import { Session } from "@/lib/steps";
 
 export default function DocScreen({
@@ -48,9 +49,9 @@ export default function DocScreen({
       <h1 className="text-2xl font-bold text-white">Tu documento 📄</h1>
 
       {status === "loading" && (
-        <p className="mt-4 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-300">
-          Generando tu documento con todo lo que nos contaste… un momento.
-        </p>
+        <div className="mt-6">
+          <ProgressBar label="Generando tu documento con todo lo que nos contaste… esto puede tardar unos segundos." />
+        </div>
       )}
 
       {status === "ready" && (
