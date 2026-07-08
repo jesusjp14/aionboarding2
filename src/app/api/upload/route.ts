@@ -34,6 +34,7 @@ export async function POST(req: NextRequest) {
           body: Readable.from(buffer),
         },
         fields: "id",
+        supportsAllDrives: true,
       });
       uploaded.push(file.name);
     }

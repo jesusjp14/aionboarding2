@@ -13,6 +13,13 @@ export function getGoogleAuth() {
   });
 }
 
+// Carpeta padre donde viven todas las carpetas de cliente. Puede ser una
+// Unidad compartida (recomendado, sin límite de cuota) o una carpeta normal
+// compartida con el service account. Si no se define, cae al Drive del SA.
+const PARENT_FOLDER_ID = () => process.env.GOOGLE_SHARED_DRIVE_ID || null;
+
+export const driveOpts = { supportsAllDrives: true } as const;
+
 // Busca (o crea) la carpeta de Drive del cliente y la comparte como editor.
 // Devuelve { folderId, folderUrl }.
 export async function getOrCreateClientFolder(
@@ -22,16 +29,33 @@ export async function getOrCreateClientFolder(
 ) {
   const drive = google.drive({ version: "v3", auth });
   const folderName = `Onboarding – ${nombre || "Cliente"}`;
+  const parent = PARENT_FOLDER_ID();
 
-  // Buscar si ya existe (no en papelera).
-  const q = `name = '${folderName.replace(/'/g, "\\'")}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false`;
-  const found = await drive.files.list({ q, fields: "files(id)", pageSize: 1 });
+  // Buscar si ya existe (no en papelera), dentro del padre si lo hay.
+  const parts = [
+    `name = '${folderName.replace(/'/g, "\\'")}'`,
+    "mimeType = 'application/vnd.google-apps.folder'",
+    "trashed = false",
+  ];
+  if (parent) parts.push(`'${parent}' in parents`);
+  const found = await drive.files.list({
+    q: parts.join(" and "),
+    fields: "files(id)",
+    pageSize: 1,
+    supportsAllDrives: true,
+    includeItemsFromAllDrives: true,
+  });
 
   let folderId = found.data.files?.[0]?.id;
   if (!folderId) {
     const created = await drive.files.create({
-      requestBody: { name: folderName, mimeType: "application/vnd.google-apps.folder" },
+      requestBody: {
+        name: folderName,
+        mimeType: "application/vnd.google-apps.folder",
+        ...(parent ? { parents: [parent] } : {}),
+      },
       fields: "id",
+      supportsAllDrives: true,
     });
     folderId = created.data.id!;
     if (correo) {
@@ -39,6 +63,7 @@ export async function getOrCreateClientFolder(
         fileId: folderId,
         sendNotificationEmail: false,
         requestBody: { type: "user", role: "writer", emailAddress: correo },
+        supportsAllDrives: true,
       });
     }
   }

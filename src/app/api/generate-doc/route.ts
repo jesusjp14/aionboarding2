@@ -78,15 +78,28 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // 3. Mover el Doc a la carpeta del cliente.
-    await drive.files.update({ fileId: documentId, addParents: folderId, fields: "id" });
+    // 3. Mover el Doc a la carpeta del cliente (quitando su parent original).
+    const meta = await drive.files.get({
+      fileId: documentId,
+      fields: "parents",
+      supportsAllDrives: true,
+    });
+    const prevParents = (meta.data.parents ?? []).join(",");
+    await drive.files.update({
+      fileId: documentId,
+      addParents: folderId,
+      removeParents: prevParents || undefined,
+      fields: "id",
+      supportsAllDrives: true,
+    });
 
-    // 4. Compartir el Doc como editor.
+    // 4. Compartir el Doc como editor con el cliente.
     if (correo) {
       await drive.permissions.create({
         fileId: documentId,
         sendNotificationEmail: true,
         requestBody: { type: "user", role: "writer", emailAddress: correo },
+        supportsAllDrives: true,
       });
     }
 
