@@ -73,8 +73,8 @@ export default function Home() {
         />
       )}
 
-      {step === "doc" && (
-        <DocScreen docUrl={session?.doc_url} onNext={() => setStep("agendar")} />
+      {step === "doc" && session && (
+        <DocScreen session={session} onNext={() => setStep("agendar")} />
       )}
 
       {step === "agendar" && <AgendarScreen onNext={() => setStep("gracias")} />}
