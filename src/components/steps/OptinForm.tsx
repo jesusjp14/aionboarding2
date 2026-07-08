@@ -14,24 +14,16 @@ export default function OptinForm({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const submit = async (e: React.FormEvent) => {
+  const submit = (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
-    try {
-      const res = await fetch("/api/session", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nombre, correo, telefono }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Error creando la sesión");
-      onDone({ id: data.session_id, nombre, correo, telefono, answers: {} });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Error inesperado");
-    } finally {
-      setLoading(false);
-    }
+    // Sin base de datos: la sesión vive en estado de React durante el flujo.
+    const id =
+      typeof crypto !== "undefined" && crypto.randomUUID
+        ? crypto.randomUUID()
+        : `s-${Date.now()}`;
+    onDone({ id, nombre, correo, telefono, answers: {} });
   };
 
   return (

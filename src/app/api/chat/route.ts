@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
-import { getSupabaseAdmin } from "@/lib/supabase";
 
 // POST /api/chat — Fase 2: chat con OpenAI que recolecta los 7 datos exactos.
-// Body: { session_id, nombre, messages: [{role, content}] }
-// Devuelve: { reply, done, answers? }  (answers solo cuando done=true)
+// Body: { nombre, messages: [{role, content}] }
+// Devuelve: { reply, done, answers? }  (answers solo cuando done=true).
+// Sin base de datos: el front guarda las answers en estado de React.
 
 const CAMPOS = `
 1. crm_api — Documentación/API del CRM (link o texto; si no la tiene, "lo envío luego").
@@ -30,7 +30,7 @@ Reglas:
   No muestres el <<DONE>> antes de terminar. Rellena cada campo con lo que el cliente dijo (o "" si no aplica).`;
 
 export async function POST(req: NextRequest) {
-  const { session_id, nombre, messages } = await req.json();
+  const { nombre, messages } = await req.json();
   const apiKey = process.env.OPENAI_API_KEY;
 
   if (!apiKey) {
@@ -63,20 +63,6 @@ export async function POST(req: NextRequest) {
       answers = JSON.parse(jsonPart);
     } catch {
       answers = undefined;
-    }
-
-    // Persistir el merge en answers.
-    if (answers) {
-      const db = getSupabaseAdmin();
-      if (db && session_id && !String(session_id).startsWith("local-")) {
-        const { data: s } = await db
-          .from("sessions")
-          .select("answers")
-          .eq("id", session_id)
-          .maybeSingle();
-        const merged = { ...((s?.answers as object) ?? {}), ...answers };
-        await db.from("sessions").update({ answers: merged }).eq("id", session_id);
-      }
     }
   }
 

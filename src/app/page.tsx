@@ -54,7 +54,13 @@ export default function Home() {
       )}
 
       {step === "orb" && session && (
-        <OrbCall session={session} onDone={() => setStep("texto")} />
+        <OrbCall
+          session={session}
+          onDone={(voz) => {
+            patch({ answers: { ...session.answers, ...voz } });
+            setStep("texto");
+          }}
+        />
       )}
 
       {step === "texto" && session && (

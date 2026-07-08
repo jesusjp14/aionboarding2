@@ -4,25 +4,30 @@ import { RetellWebClient } from "retell-client-js-sdk";
 import { Card, Button } from "@/components/ui";
 import { Session } from "@/lib/steps";
 
-type Status = "idle" | "connecting" | "active" | "ended" | "error";
+type Status = "idle" | "connecting" | "active" | "analyzing" | "ready" | "error";
 
 export default function OrbCall({
   session,
   onDone,
 }: {
   session: Session;
-  onDone: () => void;
+  onDone: (voz: Record<string, unknown>) => void;
 }) {
   const clientRef = useRef<RetellWebClient | null>(null);
+  const callIdRef = useRef<string | null>(null);
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState<string | null>(null);
   const [talking, setTalking] = useState(false);
+  const vozRef = useRef<Record<string, unknown> | null>(null);
 
   useEffect(() => {
     const client = new RetellWebClient();
     clientRef.current = client;
     client.on("call_started", () => setStatus("active"));
-    client.on("call_ended", () => setStatus("ended"));
+    client.on("call_ended", () => {
+      setStatus("analyzing");
+      pollAnalysis();
+    });
     client.on("agent_start_talking", () => setTalking(true));
     client.on("agent_stop_talking", () => setTalking(false));
     client.on("error", (e: unknown) => {
@@ -31,7 +36,33 @@ export default function OrbCall({
       client.stopCall();
     });
     return () => client.stopCall();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Tras colgar, consulta a Retell hasta que el análisis de voz esté listo.
+  const pollAnalysis = async () => {
+    const callId = callIdRef.current;
+    if (!callId) {
+      setStatus("ready"); // sin call_id no hay análisis; deja continuar
+      return;
+    }
+    for (let i = 0; i < 20; i++) {
+      await new Promise((r) => setTimeout(r, 3000));
+      try {
+        const res = await fetch(`/api/retell/call?call_id=${callId}`);
+        const data = await res.json();
+        if (data.analyzed && data.answers) {
+          vozRef.current = data.answers;
+          setStatus("ready");
+          return;
+        }
+      } catch {
+        /* reintenta */
+      }
+    }
+    // Si no llegó a tiempo, igual dejamos continuar (red de seguridad).
+    setStatus("ready");
+  };
 
   const start = async () => {
     setStatus("connecting");
@@ -40,10 +71,11 @@ export default function OrbCall({
       const res = await fetch("/api/retell/start", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ session_id: session.id, nombre: session.nombre }),
+        body: JSON.stringify({ nombre: session.nombre }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "No se pudo iniciar la llamada");
+      callIdRef.current = data.call_id;
       await clientRef.current!.startCall({ accessToken: data.access_token });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error inesperado");
@@ -83,22 +115,27 @@ export default function OrbCall({
           {status === "idle" && "Listo para empezar"}
           {status === "connecting" && "Conectando…"}
           {status === "active" && (talking ? "El ORB está hablando…" : "Te escucho…")}
-          {status === "ended" && "Llamada finalizada ✓"}
+          {status === "analyzing" && "Procesando lo que conversamos…"}
+          {status === "ready" && "¡Listo! ✓"}
           {status === "error" && "Hubo un problema"}
         </p>
         {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
       </div>
 
       <div className="mt-10 flex justify-center gap-3">
-        {status === "idle" || status === "error" ? (
+        {(status === "idle" || status === "error") && (
           <Button onClick={start}>Iniciar llamada</Button>
-        ) : null}
+        )}
         {status === "active" && (
           <Button variant="ghost" onClick={hangup}>
             Colgar
           </Button>
         )}
-        {status === "ended" && <Button onClick={onDone}>Continuar al cuestionario →</Button>}
+        {status === "ready" && (
+          <Button onClick={() => onDone(vozRef.current ?? {})}>
+            Continuar al cuestionario →
+          </Button>
+        )}
       </div>
     </Card>
   );
