@@ -1,47 +1,9 @@
 "use client";
-import { useState } from "react";
-import { Card, Button, Field, inputClass } from "@/components/ui";
+import { useEffect, useRef, useState } from "react";
+import { Card, Button, inputClass } from "@/components/ui";
 import { Session } from "@/lib/steps";
 
-const FIELDS: { name: string; label: string; placeholder: string }[] = [
-  {
-    name: "crm_api",
-    label: "Documentación de la API de tu CRM",
-    placeholder:
-      "Pega el link a la doc de tu CRM, o escríbelo aquí. Si no lo tienes, escribe 'lo envío luego'.",
-  },
-  {
-    name: "faqs",
-    label: "Preguntas frecuentes de tus clientes",
-    placeholder: "Ej: ¿Tienen financiamiento? ¿Cuál es la cuota inicial? ¿El precio incluye acabados?",
-  },
-  {
-    name: "objeciones",
-    label: "Objeciones comunes y cómo responderlas",
-    placeholder:
-      "Ej: 'Está muy caro' → plusvalía y planes de pago. 'Lo voy a pensar' → visita sin compromiso.",
-  },
-  {
-    name: "info_negocio",
-    label: "Información general del negocio",
-    placeholder: "Nombre, años en el mercado, zonas, diferencial frente a la competencia.",
-  },
-  {
-    name: "info_proyectos",
-    label: "Información de tus proyectos",
-    placeholder: "Por proyecto: nombre, ubicación, tipo, rango de precios, etapa de venta, entrega.",
-  },
-  {
-    name: "datos_obligatorios",
-    label: "Datos que la IA NO puede dejar de captar",
-    placeholder: "Ej: nombre completo, teléfono, presupuesto y proyecto de interés — siempre.",
-  },
-  {
-    name: "casos_especificos",
-    label: "Casos específicos que la IA debe saber manejar",
-    placeholder: "Ej: cliente extranjero que pregunta por crédito, o alguien que pide un humano ya.",
-  },
-];
+type Msg = { role: "user" | "assistant"; content: string };
 
 export default function TextPhase({
   session,
@@ -50,23 +12,42 @@ export default function TextPhase({
   session: Session;
   onDone: (answers: Record<string, string>) => void;
 }) {
-  const [values, setValues] = useState<Record<string, string>>({});
+  const [messages, setMessages] = useState<Msg[]>([]);
+  const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [finished, setFinished] = useState<Record<string, string> | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // Mensaje inicial del asistente al entrar.
+  useEffect(() => {
+    send([], true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+  }, [messages, loading]);
+
+  const send = async (history: Msg[], kickoff = false) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/submit-text", {
+      const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ session_id: session.id, answers: values }),
+        body: JSON.stringify({
+          session_id: session.id,
+          nombre: session.nombre,
+          messages: kickoff
+            ? [{ role: "user", content: "Hola, ya terminé la llamada. Empecemos con el chat." }]
+            : history,
+        }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Error guardando");
-      onDone(values);
+      if (!res.ok) throw new Error(data.error || "Error en el chat");
+      setMessages((m) => [...m, { role: "assistant", content: data.reply }]);
+      if (data.done && data.answers) setFinished(data.answers);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error inesperado");
     } finally {
@@ -74,28 +55,68 @@ export default function TextPhase({
     }
   };
 
+  const onSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!input.trim() || loading || finished) return;
+    const next: Msg[] = [...messages, { role: "user", content: input.trim() }];
+    setMessages(next);
+    setInput("");
+    send(next);
+  };
+
   return (
     <Card>
-      <h1 className="text-2xl font-bold text-slate-900">Últimos datos exactos ✍️</h1>
+      <h1 className="text-2xl font-bold text-slate-900">Últimos datos exactos 💬</h1>
       <p className="mt-2 text-slate-500">
-        Completa con calma. Esto se suma a lo que conversaste con el ORB para armar tu documento.
+        Conversemos por escrito para completar los detalles de tu negocio.
       </p>
-      <form onSubmit={submit} className="mt-8 space-y-5">
-        {FIELDS.map((f) => (
-          <Field key={f.name} label={f.label}>
-            <textarea
-              className={`${inputClass} min-h-[90px] resize-y`}
-              value={values[f.name] ?? ""}
-              onChange={(e) => setValues((v) => ({ ...v, [f.name]: e.target.value }))}
-              placeholder={f.placeholder}
-            />
-          </Field>
+
+      <div
+        ref={scrollRef}
+        className="mt-6 h-[50vh] min-h-[360px] space-y-3 overflow-y-auto rounded-xl bg-slate-50 p-4"
+      >
+        {messages.map((m, i) => (
+          <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
+            <div
+              className={`max-w-[80%] whitespace-pre-line rounded-2xl px-4 py-2.5 text-sm ${
+                m.role === "user"
+                  ? "bg-indigo-600 text-white"
+                  : "bg-white text-slate-700 ring-1 ring-slate-200"
+              }`}
+            >
+              {m.content}
+            </div>
+          </div>
         ))}
-        {error && <p className="text-sm text-red-600">{error}</p>}
-        <Button type="submit" disabled={loading}>
-          {loading ? "Guardando y generando tu documento…" : "Enviar y generar mi documento →"}
-        </Button>
-      </form>
+        {loading && (
+          <div className="flex justify-start">
+            <div className="rounded-2xl bg-white px-4 py-2.5 text-sm text-slate-400 ring-1 ring-slate-200">
+              escribiendo…
+            </div>
+          </div>
+        )}
+      </div>
+
+      {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
+
+      {finished ? (
+        <div className="mt-6">
+          <Button onClick={() => onDone(finished)}>Generar mi documento →</Button>
+        </div>
+      ) : (
+        <form onSubmit={onSubmit} className="mt-4 flex gap-2">
+          <input
+            className={inputClass}
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder="Escribe tu respuesta…"
+            disabled={loading}
+          />
+          <Button type="submit" disabled={loading || !input.trim()}>
+            Enviar
+          </Button>
+        </form>
+      )}
     </Card>
   );
 }

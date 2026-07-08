@@ -21,10 +21,9 @@ El cliente entra, ve una bienvenida, deja sus datos, conversa por **voz** con un
 - **Frontend + Backend**: Next.js (App Router) desplegado en Vercel. Los API Routes de Next.js son todo el backend — NO usamos n8n ni servidores aparte.
 - **Base de datos**: Supabase (una sola tabla: `sessions`).
 - **Agente de voz (ORB)**: Retell AI. Agente actual: "Camila AI onboarding", LLM GPT-5.1 dentro de Retell, español (Latam).
-- **Fase 2 de texto**: chat por escrito con OpenAI (GPT) — POR CONFIRMAR reparto vs. formulario simple (ver nota en secciones 4 y 11).
+- **Fase 2 de texto**: chat por escrito con OpenAI (GPT) que cubre los 7 datos exactos.
 - **Documento del cliente**: Google Docs API + Drive API (crear y compartir como editor).
-- **Confirmaciones**: GoHighLevel (GHL) API para WhatsApp + correo.
-- **Agendamiento**: Calendly o GHL Calendar (POR DEFINIR — ver sección 16).
+- **Agendamiento**: iframe del calendario GHL (`CALENDAR_URL`). GHL envía la confirmación WhatsApp por su cuenta; la app NO integra GHL.
 
 ---
 
@@ -49,8 +48,10 @@ Regla mental: **Retell solo sabe lo que se habló. Todo lo escrito lo guarda la 
 
 **FASE 1 — Llamada ORB (solo voz):** el ORB hace todas las preguntas conversacionales de corrido. Al terminar, cuelga. Retell extrae las respuestas (Post-Call Analysis) y las manda por el webhook `call_analyzed`. La app las guarda en `answers`.
 
-**FASE 2 — Texto (después de la llamada):** la app recoge los datos exactos por escrito y los guarda en `answers`.
-> ⚠️ DECISIÓN ABIERTA: la Fase 2 puede ser (a) un **formulario simple** o (b) un **chat con OpenAI** que conversa por escrito y al terminar entrega la info. El usuario mencionó chat con OpenAI directamente. Confirmar antes de codear esta pieza. Si es chat OpenAI: agrega `OPENAI_API_KEY` y endpoint `/api/chat`.
+**FASE 2 — Texto (después de la llamada):** es un **chat con OpenAI** (DECIDIDO). El
+usuario conversa por escrito y el chat cubre los 7 datos exactos (crm_api, faqs,
+objeciones, info_negocio, info_proyectos, datos_obligatorios, casos_especificos),
+los extrae y los guarda en `answers`. Endpoint `/api/chat`, requiere `OPENAI_API_KEY`.
 
 **NO se necesitan custom functions en Retell.** Solo Post-Call Analysis + 1 webhook.
 
@@ -120,9 +121,9 @@ Merge en `answers` sin pisar lo existente (RPC o leer-modificar-escribir en el e
 - `POST /api/session` — crea la sesión desde el optin. Devuelve `session_id`.
 - `POST /api/retell/start` — inicia la llamada del ORB con el nombre dinámico; guarda `retell_call_id`.
 - `POST /api/retell/webhook` — recibe `call_analyzed`. Extrae `custom_analysis_data` (voz) → `answers`. `estado = voz_completa`. Red de seguridad: si se cortó, marca `incompleto` y avisa.
-- `POST /api/submit-text` (o `/api/chat` si es chat OpenAI) — recibe la Fase 2, merge en `answers`, dispara la generación del Doc.
+- `POST /api/chat` — Fase 2: chat con OpenAI. Al cerrar, extrae los 7 datos y merge en `answers`; luego dispara la generación del Doc.
 - `POST /api/generate-doc` — copia plantilla, reemplaza placeholders con `answers`, comparte como editor al `correo`, guarda `doc_url`, `estado = doc_generado`.
-- `POST /api/booking-webhook` — al agendar: `estado = agendado` + `reunion_at`, avisa al equipo, confirma al cliente por WhatsApp + correo (SIN recordatorios).
+- (Agendamiento: solo iframe del calendario, sin endpoint. Ver sección 13.)
 
 ---
 
@@ -229,11 +230,9 @@ En `/api/generate-doc`:
 
 ## 13. Agendamiento y confirmación
 
-Al agendar, el calendario dispara webhook a `/api/booking-webhook`:
-1. `estado = agendado` + `reunion_at`.
-2. Notifica al equipo interno.
-3. Confirma al cliente por **WhatsApp (GHL)** y **correo** con fecha/hora + link del Doc.
-4. **SIN recordatorios.**
+La app solo **embebe el calendario** (`CALENDAR_URL`, GHL/LeadConnector) en un iframe.
+Al agendar, **GHL** envía la confirmación por **WhatsApp automáticamente y por su cuenta**
+(fuera de la app). NO hay `booking-webhook` ni integración con GHL. SIN recordatorios.
 
 ---
 
@@ -257,14 +256,14 @@ OPENAI_API_KEY
 GOOGLE_SERVICE_ACCOUNT_JSON
 GOOGLE_DOC_TEMPLATE_ID
 
-# GHL
-GHL_API_KEY
-GHL_LOCATION_ID
-
 # App
 NEXT_PUBLIC_BASE_URL
 ACADEMIA_URL=https://academy.propyia.com/
+CALENDAR_URL=https://updates.masterleads.pro/widget/bookings/planificacin-de-proyecto
 ```
+
+> GHL queda FUERA de la app: el agendamiento es solo el link/iframe del calendario, y
+> GHL manda la confirmación por WhatsApp automáticamente por su cuenta. Sin GHL_API_KEY.
 
 ---
 
@@ -283,12 +282,12 @@ Construir y PROBAR cada pieza antes de la siguiente:
 
 ---
 
-## 16. Decisiones pendientes (preguntar antes de codear la pieza afectada)
+## 16. Decisiones (estado)
 
-- **Fase 2**: ¿formulario simple o chat con OpenAI? (ver sección 4).
-- **Agendamiento**: ¿Calendly o GHL Calendar? Define el payload del `booking-webhook`.
-- **Diseño visual**: estética de la app.
-- **Plantilla del Doc**: layout final.
+- **Fase 2**: ✅ chat con OpenAI (sección 4).
+- **Agendamiento**: ✅ iframe del calendario GHL (`CALENDAR_URL`); confirmación WhatsApp la manda GHL sola. Sin integración GHL en la app.
+- **Diseño visual**: pendiente — estética de la app (por ahora limpio, indigo/slate).
+- **Plantilla del Doc**: pendiente — layout final del Google Doc.
 
 ---
 
