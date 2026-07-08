@@ -18,7 +18,7 @@ export default function Home() {
     setSession((s) => (s ? { ...s, ...p } : s));
 
   return (
-    <main className="min-h-screen bg-slate-50 px-4 py-10 sm:py-16">
+    <main className="relative min-h-screen px-4 py-10 sm:py-16">
       {session && <Stepper current={step} />}
 
       {step === "optin" && (
@@ -34,7 +34,7 @@ export default function Home() {
         <ContentScreen
           title={`¡Hola, ${session?.nombre.split(" ")[0]}! Bienvenido 🎉`}
           body={
-            "Estás por configurar tu agente de IA con Propy AI. En los próximos minutos vas a conversar con el ORB por voz, dejar unos datos por escrito, y recibir tu documento de onboarding.\n\nDale continuar cuando estés listo."
+            "Estás por configurar tu agente de IA con Propy AI. En los próximos minutos vas a conversar con Camila por voz, dejar unos datos por escrito, y recibir tu documento de onboarding.\n\nDale continuar cuando estés listo."
           }
           videoUrl={null}
           onNext={() => setStep("proceso")}
@@ -45,7 +45,7 @@ export default function Home() {
         <ContentScreen
           title="Así trabajaremos juntos"
           body={
-            "1. Conversas con el ORB por voz sobre tu negocio.\n2. Completas un cuestionario corto con datos exactos.\n3. Generamos tu documento de onboarding.\n4. Agendas tu reunión de planificación.\n\n¡Empecemos!"
+            "1. Conversas con Camila por voz sobre tu negocio.\n2. Completas un chat corto con datos exactos.\n3. Generamos tu documento de onboarding.\n4. Agendas tu reunión de planificación.\n\n¡Empecemos!"
           }
           videoUrl={null}
           onNext={() => setStep("orb")}

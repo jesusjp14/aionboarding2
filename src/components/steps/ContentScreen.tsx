@@ -18,7 +18,7 @@ export default function ContentScreen({
 }) {
   return (
     <Card>
-      <h1 className="text-2xl font-bold text-slate-900">{title}</h1>
+      <h1 className="text-2xl font-bold text-white">{title}</h1>
       {videoUrl ? (
         <div className="mt-6 aspect-video w-full overflow-hidden rounded-xl bg-slate-100">
           <iframe
@@ -29,7 +29,7 @@ export default function ContentScreen({
           />
         </div>
       ) : null}
-      <p className="mt-6 whitespace-pre-line leading-relaxed text-slate-600">{body}</p>
+      <p className="mt-6 whitespace-pre-line leading-relaxed text-slate-300">{body}</p>
       <div className="mt-8">
         <Button onClick={onNext}>{nextLabel}</Button>
       </div>

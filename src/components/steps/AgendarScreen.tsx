@@ -9,13 +9,13 @@ const CALENDAR_URL =
 export default function AgendarScreen({ onNext }: { onNext: () => void }) {
   return (
     <Card>
-      <h1 className="text-2xl font-bold text-slate-900">
+      <h1 className="text-2xl font-bold text-white">
         Agenda tu reunión de planificación 🗓️
       </h1>
-      <p className="mt-2 text-slate-500">
+      <p className="mt-2 text-slate-400">
         Elige el horario que mejor te quede. Recibirás la confirmación por WhatsApp.
       </p>
-      <div className="mt-6 overflow-hidden rounded-xl border border-slate-200">
+      <div className="mt-6 overflow-hidden rounded-xl border border-white/10 bg-white">
         <iframe
           src={CALENDAR_URL}
           className="h-[70vh] min-h-[600px] w-full"

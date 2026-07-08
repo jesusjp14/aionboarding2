@@ -28,8 +28,8 @@ export default function OptinForm({
 
   return (
     <Card>
-      <h1 className="text-2xl font-bold text-slate-900">Bienvenido a Propy AI 👋</h1>
-      <p className="mt-2 text-slate-500">
+      <h1 className="text-2xl font-bold text-white">Bienvenido a Propy AI 👋</h1>
+      <p className="mt-2 text-slate-400">
         Antes de empezar, déjanos tus datos para personalizar tu onboarding.
       </p>
       <form onSubmit={submit} className="mt-8 space-y-5">

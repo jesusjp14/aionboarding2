@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { google } from "googleapis";
+import { getGoogleAuth, getOrCreateClientFolder } from "@/lib/google";
 
-// POST /api/generate-doc — crea un Google Doc desde cero con la info del cliente
-// (voz + chat), lo comparte como editor a su correo y devuelve el link.
+// POST /api/generate-doc — crea el Google Doc en la carpeta del cliente, lo comparte
+// como editor y devuelve doc_url + folder_url (esa carpeta ya tiene los archivos subidos).
 // Body: { nombre, correo, answers }
 
-// Etiquetas legibles para cada dato recolectado.
 const LABELS: Record<string, string> = {
   proceso_comercial: "Proceso comercial",
   objetivo: "Objetivo con la IA",
@@ -27,22 +27,9 @@ const LABELS: Record<string, string> = {
   casos_especificos: "Casos específicos",
 };
 
-function getAuth() {
-  const raw = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
-  if (!raw) return null;
-  const creds = JSON.parse(raw);
-  return new google.auth.GoogleAuth({
-    credentials: creds,
-    scopes: [
-      "https://www.googleapis.com/auth/documents",
-      "https://www.googleapis.com/auth/drive",
-    ],
-  });
-}
-
 export async function POST(req: NextRequest) {
   const { nombre, correo, answers } = await req.json();
-  const auth = getAuth();
+  const auth = getGoogleAuth();
 
   if (!auth) {
     return NextResponse.json(
@@ -55,13 +42,16 @@ export async function POST(req: NextRequest) {
     const docs = google.docs({ version: "v1", auth });
     const drive = google.drive({ version: "v3", auth });
 
-    // 1. Crear el documento con título.
+    // Carpeta del cliente (con sus archivos subidos, si los hay).
+    const { folderId, folderUrl } = await getOrCreateClientFolder(auth, nombre, correo);
+
+    // 1. Crear el documento.
     const created = await docs.documents.create({
       requestBody: { title: `Onboarding – ${nombre || "Cliente"}` },
     });
     const documentId = created.data.documentId!;
 
-    // 2. Construir el cuerpo: encabezado + cada dato.
+    // 2. Cuerpo: encabezado + datos.
     const header = `Propy AI · Planificación – ${nombre || "Cliente"}\n\n`;
     let body = "";
     const ans = (answers ?? {}) as Record<string, unknown>;
@@ -72,7 +62,6 @@ export async function POST(req: NextRequest) {
     }
     if (!body) body = "(Sin datos recolectados todavía.)\n";
 
-    // 3. Insertar el texto (se inserta en orden inverso al índice 1).
     await docs.documents.batchUpdate({
       documentId,
       requestBody: {
@@ -89,7 +78,10 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // 4. Compartir como editor con el cliente.
+    // 3. Mover el Doc a la carpeta del cliente.
+    await drive.files.update({ fileId: documentId, addParents: folderId, fields: "id" });
+
+    // 4. Compartir el Doc como editor.
     if (correo) {
       await drive.permissions.create({
         fileId: documentId,
@@ -99,7 +91,7 @@ export async function POST(req: NextRequest) {
     }
 
     const docUrl = `https://docs.google.com/document/d/${documentId}/edit`;
-    return NextResponse.json({ doc_url: docUrl });
+    return NextResponse.json({ doc_url: docUrl, folder_url: folderUrl });
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Error generando el documento";
     return NextResponse.json({ error: msg }, { status: 500 });

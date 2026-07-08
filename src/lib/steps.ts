@@ -27,5 +27,6 @@ export type Session = {
   telefono: string;
   answers: Record<string, unknown>;
   doc_url?: string | null;
+  folder_url?: string | null;
   estado?: string;
 };

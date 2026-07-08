@@ -21,11 +21,11 @@ export default function GraciasChecklist({ nombre }: { nombre: string }) {
     title: string;
     children: React.ReactNode;
   }) => (
-    <div className="flex gap-4 rounded-xl border border-slate-200 p-4">
+    <div className="flex gap-4 rounded-xl border border-white/10 bg-white/[0.03] p-4">
       <button
         onClick={() => toggle(id)}
         className={`mt-0.5 h-6 w-6 flex-none rounded-full border-2 transition ${
-          done[id] ? "border-emerald-500 bg-emerald-500" : "border-slate-300"
+          done[id] ? "border-emerald-500 bg-emerald-500" : "border-slate-500"
         }`}
         aria-label={done[id] ? "Completado" : "Marcar como completado"}
       >
@@ -36,20 +36,20 @@ export default function GraciasChecklist({ nombre }: { nombre: string }) {
         )}
       </button>
       <div className="flex-1">
-        <p className={`font-semibold ${done[id] ? "text-slate-400 line-through" : "text-slate-800"}`}>
+        <p className={`font-semibold ${done[id] ? "text-slate-500 line-through" : "text-white"}`}>
           {title}
         </p>
-        <div className="mt-2 text-sm text-slate-500">{children}</div>
+        <div className="mt-2 text-sm text-slate-400">{children}</div>
       </div>
     </div>
   );
 
   return (
     <Card>
-      <h1 className="text-2xl font-bold text-slate-900">
+      <h1 className="text-2xl font-bold text-white">
         ¡Gracias, {nombre.split(" ")[0]}! 🎉
       </h1>
-      <p className="mt-2 text-slate-500">
+      <p className="mt-2 text-slate-400">
         Tu onboarding está completo. Te enviamos la confirmación por WhatsApp y correo.
         Solo faltan estos dos pasos para dejar todo listo:
       </p>

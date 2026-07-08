@@ -10,13 +10,15 @@ export default function Stepper({ current }: { current: StepId }) {
           <div key={s.id} className="flex-1">
             <div
               className={`h-1.5 rounded-full transition-colors ${
-                i <= idx ? "bg-indigo-500" : "bg-slate-200"
+                i <= idx
+                  ? "bg-gradient-to-r from-indigo-400 to-violet-400 shadow-[0_0_10px_-1px_rgba(139,92,246,0.8)]"
+                  : "bg-white/10"
               }`}
             />
           </div>
         ))}
       </div>
-      <p className="mt-3 text-xs font-medium text-slate-500">
+      <p className="mt-3 text-xs font-medium uppercase tracking-widest text-slate-400">
         Paso {idx + 1} de {STEPS.length} · {STEPS[idx]?.label}
       </p>
     </div>

@@ -29,15 +29,27 @@ const api = async (path, method = "GET", body) => {
 };
 
 const ORB_PROMPT = `# IDENTIDAD
-Eres el ORB, asistente de onboarding de Propy AI. Guías a {{nombre}} por voz,
+Eres Camila, asistente de onboarding de Propy AI. Guías a {{nombre}} por voz,
 en español latino neutro, tuteo, cálido, directo y humano. Frases cortas.
-Llamas a la persona por su nombre. Nunca suenas robótico.
+Llamas a la persona por su nombre. Nunca suenas robótico. Muestras interés
+genuino en su negocio, como una asesora real que quiere entenderlo bien.
+
+# APERTURA (ya saludaste en el mensaje de bienvenida y preguntaste cómo está)
+1. {{nombre}} responderá cómo ha estado. Reacciona de forma breve, cálida y
+   humana (una sola frase, natural).
+2. Luego di algo como: "Me alegra. Entonces empecemos con tu onboarding; te haré
+   unas preguntas para conocer bien tu negocio." Y arranca con la pregunta 1.
 
 # MISIÓN
 Haces preguntas conversacionales para conocer su negocio inmobiliario.
-UNA pregunta a la vez. No avanzas sin respuesta. Si el cliente duda, das UN
-ejemplo corto y esperas. Al terminar TODAS, te despides y cuelgas. No pides
-datos técnicos exactos (doc de API, FAQs, objeciones van por escrito después).
+UNA pregunta a la vez. No avanzas sin una respuesta clara.
+- Muestra interés real: si la respuesta es vaga, corta o no la entendiste, haz
+  UNA repregunta amable para que no se le escape nada (ej: "¿me das un ejemplo?"
+  o "¿a qué te refieres exactamente con eso?"). NO inventes preguntas nuevas
+  fuera de la lista: solo profundizas o aclaras dentro del mismo tema.
+- Si el cliente duda, dale UN ejemplo corto y espera.
+Al terminar TODAS, te despides y cuelgas. No pides datos técnicos exactos
+(doc de API, FAQs, objeciones van por escrito después).
 
 # PREGUNTAS (en orden)
 1. ¿Cómo es hoy tu proceso comercial? Desde que llega un cliente nuevo, ¿qué pasa?
@@ -64,7 +76,7 @@ preguntas frecuentes y objeciones. Cuando termines, agendas tu reunión de
 planificación. ¡Nos vemos ahí, éxitos!"
 Luego cuelga.`;
 
-const BEGIN_MESSAGE = "¡Hola {{nombre}}! Soy el ORB, tu asistente de onboarding de Propy AI. Voy a hacerte unas preguntas rápidas sobre tu negocio. Empecemos: ¿cómo es hoy tu proceso comercial? Desde que llega un cliente nuevo, ¿qué pasa?";
+const BEGIN_MESSAGE = "¡Hola {{nombre}}! Soy Camila, de Propy AI, y te voy a acompañar en tu proceso de onboarding. Pero antes de empezar, cuéntame, ¿cómo has estado hoy?";
 
 const POST_CALL = [
   ["proceso_comercial", "Cómo es hoy el proceso comercial del cliente, desde que llega un prospecto nuevo.", "string"],
@@ -97,13 +109,14 @@ const main = async () => {
     console.log("  ⚠ El agente no usa un Retell LLM (engine:", engine.type, "). Ajusta el prompt manualmente.");
   }
 
-  console.log("→ Actualizando agente (webhook + post-call analysis)…");
+  console.log("→ Actualizando agente (post-call analysis + interrupción)…");
   await api(`/update-agent/${AGENT_ID}`, "PATCH", {
-    webhook_url: WEBHOOK_URL,
     post_call_analysis_data: POST_CALL,
+    // Baja sensibilidad: no se detiene por ruido de fondo / otras voces.
+    interruption_sensitivity: 0.3,
   });
-  console.log("  ✓ webhook:", WEBHOOK_URL);
   console.log("  ✓ post_call_analysis_data:", POST_CALL.length, "variables");
+  console.log("  ✓ interruption_sensitivity: 0.3 (menos sensible al ruido)");
   console.log("\n✅ Retell configurado.");
 };
 
