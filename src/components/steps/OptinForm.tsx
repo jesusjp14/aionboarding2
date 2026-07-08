@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { Card, Button, Field, inputClass } from "@/components/ui";
+import { COUNTRIES } from "@/lib/countries";
 import { Session } from "@/lib/steps";
 
 export default function OptinForm({
@@ -10,7 +11,8 @@ export default function OptinForm({
 }) {
   const [nombre, setNombre] = useState("");
   const [correo, setCorreo] = useState("");
-  const [telefono, setTelefono] = useState("");
+  const [dial, setDial] = useState("+52");
+  const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -18,6 +20,7 @@ export default function OptinForm({
     e.preventDefault();
     setLoading(true);
     setError(null);
+    const telefono = phone.trim() ? `${dial} ${phone.trim()}` : "";
     // Sin base de datos: la sesión vive en estado de React durante el flujo.
     const id =
       typeof crypto !== "undefined" && crypto.randomUUID
@@ -53,12 +56,27 @@ export default function OptinForm({
           />
         </Field>
         <Field label="Teléfono (WhatsApp)">
-          <input
-            className={inputClass}
-            value={telefono}
-            onChange={(e) => setTelefono(e.target.value)}
-            placeholder="+52 55 1234 5678"
-          />
+          <div className="flex gap-2">
+            <select
+              value={dial}
+              onChange={(e) => setDial(e.target.value)}
+              className={`${inputClass} w-32 flex-none appearance-none pr-2`}
+              aria-label="Código de país"
+            >
+              {COUNTRIES.map((c) => (
+                <option key={c.iso} value={c.dial} className="bg-slate-900 text-white">
+                  {c.flag} {c.dial}
+                </option>
+              ))}
+            </select>
+            <input
+              className={inputClass}
+              type="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="55 1234 5678"
+            />
+          </div>
         </Field>
         {error && <p className="text-sm text-red-600">{error}</p>}
         <Button type="submit" disabled={loading}>

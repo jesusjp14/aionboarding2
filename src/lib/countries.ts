@@ -1,0 +1,23 @@
+// Lista de países (bandera, nombre, código) enfocada en LATAM + otros comunes.
+export const COUNTRIES: { flag: string; name: string; dial: string; iso: string }[] = [
+  { flag: "🇲🇽", name: "México", dial: "+52", iso: "MX" },
+  { flag: "🇨🇴", name: "Colombia", dial: "+57", iso: "CO" },
+  { flag: "🇵🇪", name: "Perú", dial: "+51", iso: "PE" },
+  { flag: "🇨🇱", name: "Chile", dial: "+56", iso: "CL" },
+  { flag: "🇦🇷", name: "Argentina", dial: "+54", iso: "AR" },
+  { flag: "🇪🇨", name: "Ecuador", dial: "+593", iso: "EC" },
+  { flag: "🇧🇴", name: "Bolivia", dial: "+591", iso: "BO" },
+  { flag: "🇻🇪", name: "Venezuela", dial: "+58", iso: "VE" },
+  { flag: "🇺🇾", name: "Uruguay", dial: "+598", iso: "UY" },
+  { flag: "🇵🇾", name: "Paraguay", dial: "+595", iso: "PY" },
+  { flag: "🇬🇹", name: "Guatemala", dial: "+502", iso: "GT" },
+  { flag: "🇸🇻", name: "El Salvador", dial: "+503", iso: "SV" },
+  { flag: "🇭🇳", name: "Honduras", dial: "+504", iso: "HN" },
+  { flag: "🇳🇮", name: "Nicaragua", dial: "+505", iso: "NI" },
+  { flag: "🇨🇷", name: "Costa Rica", dial: "+506", iso: "CR" },
+  { flag: "🇵🇦", name: "Panamá", dial: "+507", iso: "PA" },
+  { flag: "🇩🇴", name: "Rep. Dominicana", dial: "+1", iso: "DO" },
+  { flag: "🇵🇷", name: "Puerto Rico", dial: "+1", iso: "PR" },
+  { flag: "🇺🇸", name: "Estados Unidos", dial: "+1", iso: "US" },
+  { flag: "🇪🇸", name: "España", dial: "+34", iso: "ES" },
+];
