@@ -60,7 +60,7 @@ export default function OptinForm({
             <select
               value={dial}
               onChange={(e) => setDial(e.target.value)}
-              className={`${inputClass} w-32 flex-none appearance-none pr-2`}
+              className="w-28 flex-none rounded-xl border border-white/10 bg-white/[0.04] px-3 py-3 text-sm text-white outline-none transition focus:border-indigo-400/60 focus:ring-2 focus:ring-indigo-500/20"
               aria-label="Código de país"
             >
               {COUNTRIES.map((c) => (
@@ -70,7 +70,7 @@ export default function OptinForm({
               ))}
             </select>
             <input
-              className={inputClass}
+              className={`${inputClass} flex-1`}
               type="tel"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
