@@ -45,14 +45,23 @@ export async function POST(req: NextRequest) {
     // Carpeta del cliente (con sus archivos subidos, si los hay).
     const { folderId, folderUrl } = await getOrCreateClientFolder(auth, nombre, correo);
 
-    // 1. Crear el documento.
-    const created = await docs.documents.create({
-      requestBody: { title: `Onboarding – ${nombre || "Cliente"}` },
+    // 1. Crear el Doc DIRECTO dentro de la carpeta del cliente (con la Drive API).
+    // Nota: no usamos docs.documents.create porque eso lo crearía en la raíz del
+    // service account (sin cuota) → "caller does not have permission".
+    const created = await drive.files.create({
+      requestBody: {
+        name: `Onboarding – ${nombre || "Cliente"}`,
+        mimeType: "application/vnd.google-apps.document",
+        parents: [folderId],
+      },
+      fields: "id",
+      supportsAllDrives: true,
     });
-    const documentId = created.data.documentId!;
+    const documentId = created.data.id!;
 
-    // 2. Cuerpo: encabezado + datos.
+    // 2. Cuerpo: encabezado + link a la carpeta + datos.
     const header = `Propy AI · Planificación – ${nombre || "Cliente"}\n\n`;
+    const folderLine = `📁 Carpeta de archivos del cliente: ${folderUrl}\n\n`;
     let body = "";
     const ans = (answers ?? {}) as Record<string, unknown>;
     for (const [key, label] of Object.entries(LABELS)) {
@@ -66,7 +75,7 @@ export async function POST(req: NextRequest) {
       documentId,
       requestBody: {
         requests: [
-          { insertText: { location: { index: 1 }, text: header + body } },
+          { insertText: { location: { index: 1 }, text: header + folderLine + body } },
           {
             updateParagraphStyle: {
               range: { startIndex: 1, endIndex: header.length },
@@ -78,22 +87,7 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // 3. Mover el Doc a la carpeta del cliente (quitando su parent original).
-    const meta = await drive.files.get({
-      fileId: documentId,
-      fields: "parents",
-      supportsAllDrives: true,
-    });
-    const prevParents = (meta.data.parents ?? []).join(",");
-    await drive.files.update({
-      fileId: documentId,
-      addParents: folderId,
-      removeParents: prevParents || undefined,
-      fields: "id",
-      supportsAllDrives: true,
-    });
-
-    // 4. Compartir el Doc como editor con el cliente.
+    // 3. Compartir el Doc como editor con el cliente.
     if (correo) {
       await drive.permissions.create({
         fileId: documentId,
