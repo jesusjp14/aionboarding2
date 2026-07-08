@@ -12,7 +12,9 @@ export async function POST(req: NextRequest) {
   }
 
   const form = await req.formData();
-  const nombre = String(form.get("nombre") || "Cliente");
+  const nombre = String(form.get("nombre") || "");
+  const apellido = String(form.get("apellido") || "");
+  const empresa = String(form.get("empresa") || "");
   const correo = form.get("correo") ? String(form.get("correo")) : undefined;
   const files = form.getAll("files").filter((f): f is File => f instanceof File);
 
@@ -20,8 +22,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Sin archivos" }, { status: 400 });
   }
 
+  // Mismo label que usa generate-doc, para caer en la misma carpeta.
+  const fullName = `${nombre} ${apellido}`.trim() || "Cliente";
+  const label = [empresa, fullName].filter(Boolean).join(" – ");
+
   try {
-    const { folderId, folderUrl } = await getOrCreateClientFolder(auth, nombre, correo);
+    const { folderId, folderUrl } = await getOrCreateClientFolder(auth, label, correo);
     const drive = google.drive({ version: "v3", auth });
 
     const uploaded: string[] = [];

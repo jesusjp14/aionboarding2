@@ -23,6 +23,8 @@ export const STEPS: { id: StepId; label: string }[] = [
 export type Session = {
   id: string;
   nombre: string;
+  apellido: string;
+  empresa: string;
   correo: string;
   telefono: string;
   answers: Record<string, unknown>;

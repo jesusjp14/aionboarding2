@@ -55,11 +55,11 @@ export default function Home() {
         <ContentScreen
           title="Así trabajaremos juntos"
           body={
-            "1. Conversas con Camila por voz sobre tu negocio.\n2. Completas un cuestionario corto con datos exactos.\n3. Generamos tu documento de onboarding.\n4. Agendas tu reunión de planificación.\n\n¡Empecemos!"
+            "1. Conversas con Camila por voz sobre tu negocio.\n2. Completas un cuestionario corto con datos exactos.\n3. Generamos tu documento de onboarding.\n4. Agendas tu reunión de planificación.\n5. Creas tu cuenta de Twilio (si aplica) y accedes a la Academia Propy.\n\n¡Empecemos!"
           }
           videoUrl={null}
           onNext={() => setStep("orb")}
-          nextLabel="Empezar la llamada →"
+          nextLabel="Empezar la conversación →"
         />
       )}
 

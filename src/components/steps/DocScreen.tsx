@@ -27,7 +27,10 @@ export default function DocScreen({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             nombre: session.nombre,
+            apellido: session.apellido,
+            empresa: session.empresa,
             correo: session.correo,
+            telefono: session.telefono,
             answers: session.answers,
           }),
         });

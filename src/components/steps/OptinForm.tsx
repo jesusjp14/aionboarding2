@@ -10,6 +10,8 @@ export default function OptinForm({
   onDone: (s: Session) => void;
 }) {
   const [nombre, setNombre] = useState("");
+  const [apellido, setApellido] = useState("");
+  const [empresa, setEmpresa] = useState("");
   const [correo, setCorreo] = useState("");
   const [dial, setDial] = useState("+52");
   const [phone, setPhone] = useState("");
@@ -26,7 +28,7 @@ export default function OptinForm({
       typeof crypto !== "undefined" && crypto.randomUUID
         ? crypto.randomUUID()
         : `s-${Date.now()}`;
-    onDone({ id, nombre, correo, telefono, answers: {} });
+    onDone({ id, nombre, apellido, empresa, correo, telefono, answers: {} });
   };
 
   return (
@@ -36,12 +38,32 @@ export default function OptinForm({
         Antes de empezar, déjanos tus datos para personalizar tu onboarding.
       </p>
       <form onSubmit={submit} className="mt-8 space-y-5">
-        <Field label="Tu nombre *">
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+          <Field label="Nombre *">
+            <input
+              className={inputClass}
+              value={nombre}
+              onChange={(e) => setNombre(e.target.value)}
+              placeholder="Ej: Camila"
+              required
+            />
+          </Field>
+          <Field label="Apellido *">
+            <input
+              className={inputClass}
+              value={apellido}
+              onChange={(e) => setApellido(e.target.value)}
+              placeholder="Ej: Rodríguez"
+              required
+            />
+          </Field>
+        </div>
+        <Field label="Nombre de tu empresa *">
           <input
             className={inputClass}
-            value={nombre}
-            onChange={(e) => setNombre(e.target.value)}
-            placeholder="Ej: Camila"
+            value={empresa}
+            onChange={(e) => setEmpresa(e.target.value)}
+            placeholder="Ej: Constructora del Valle"
             required
           />
         </Field>

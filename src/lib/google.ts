@@ -24,11 +24,11 @@ export const driveOpts = { supportsAllDrives: true } as const;
 // Devuelve { folderId, folderUrl }.
 export async function getOrCreateClientFolder(
   auth: NonNullable<ReturnType<typeof getGoogleAuth>>,
-  nombre: string,
+  label: string,
   correo?: string
 ) {
   const drive = google.drive({ version: "v3", auth });
-  const folderName = `Onboarding – ${nombre || "Cliente"}`;
+  const folderName = `Onboarding – ${label || "Cliente"}`;
   const parent = PARENT_FOLDER_ID();
 
   // Buscar si ya existe (no en papelera), dentro del padre si lo hay.

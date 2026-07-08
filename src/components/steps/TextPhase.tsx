@@ -62,6 +62,8 @@ export default function TextPhase({
     try {
       const fd = new FormData();
       fd.append("nombre", session.nombre);
+      fd.append("apellido", session.apellido);
+      fd.append("empresa", session.empresa);
       if (session.correo) fd.append("correo", session.correo);
       Array.from(files).forEach((f) => fd.append("files", f));
       const res = await fetch("/api/upload", { method: "POST", body: fd });

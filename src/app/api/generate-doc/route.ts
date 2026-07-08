@@ -110,7 +110,9 @@ async function oportunidades(answers: Record<string, unknown>, nombre: string) {
 }
 
 export async function POST(req: NextRequest) {
-  const { nombre, correo, telefono, answers } = await req.json();
+  const { nombre, apellido, empresa, correo, telefono, answers } = await req.json();
+  const fullName = `${nombre || ""} ${apellido || ""}`.trim() || "Cliente";
+  const label = [empresa, fullName].filter(Boolean).join(" – ");
   const auth = getGoogleAuth();
   if (!auth) {
     return NextResponse.json(
@@ -124,12 +126,12 @@ export async function POST(req: NextRequest) {
   try {
     const docs = google.docs({ version: "v1", auth });
     const drive = google.drive({ version: "v3", auth });
-    const { folderId, folderUrl } = await getOrCreateClientFolder(auth, nombre, correo);
+    const { folderId, folderUrl } = await getOrCreateClientFolder(auth, label, correo);
 
     // Crear el Doc directo en la carpeta del cliente (no en la raíz del SA).
     const created = await drive.files.create({
       requestBody: {
-        name: `Onboarding – ${nombre || "Cliente"}`,
+        name: `Onboarding – ${label}`,
         mimeType: "application/vnd.google-apps.document",
         parents: [folderId],
       },
@@ -144,11 +146,12 @@ export async function POST(req: NextRequest) {
     // Construir el documento con formato.
     const b = new DocBuilder();
     b.title("Propy AI · Planificación de Onboarding");
-    b.subtitle(nombre || "Cliente");
+    b.subtitle(empresa ? `${empresa} — ${fullName}` : fullName);
     b.spacer();
 
     b.h1("Datos del cliente");
-    b.labelLine("Nombre", nombre || "—");
+    b.labelLine("Empresa", empresa || "—");
+    b.labelLine("Nombre", fullName);
     b.labelLine("Correo", correo || "—");
     b.labelLine("Teléfono", telefono || "—");
     b.labelLine("Carpeta de archivos", folderUrl);
