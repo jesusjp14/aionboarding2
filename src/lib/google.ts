@@ -20,6 +20,36 @@ const PARENT_FOLDER_ID = () => process.env.GOOGLE_SHARED_DRIVE_ID || null;
 
 export const driveOpts = { supportsAllDrives: true } as const;
 
+// Correos internos que SIEMPRE reciben acceso de editor (además del cliente).
+// Configurable con TEAM_EMAILS (separados por coma).
+export const EXTRA_EDITORS = (process.env.TEAM_EMAILS || "alandavid1999200@gmail.com")
+  .split(",")
+  .map((s) => s.trim())
+  .filter(Boolean);
+
+// Comparte un archivo/carpeta como editor con varios correos (ignora errores
+// individuales para no frenar el flujo).
+export async function shareAsEditor(
+  drive: ReturnType<typeof google.drive>,
+  fileId: string,
+  emails: string[],
+  notify = false
+) {
+  for (const email of emails) {
+    if (!email) continue;
+    try {
+      await drive.permissions.create({
+        fileId,
+        sendNotificationEmail: notify,
+        requestBody: { type: "user", role: "writer", emailAddress: email },
+        supportsAllDrives: true,
+      });
+    } catch {
+      /* continúa con los demás */
+    }
+  }
+}
+
 // Busca (o crea) la carpeta de Drive del cliente y la comparte como editor.
 // Devuelve { folderId, folderUrl }.
 export async function getOrCreateClientFolder(
@@ -58,14 +88,8 @@ export async function getOrCreateClientFolder(
       supportsAllDrives: true,
     });
     folderId = created.data.id!;
-    if (correo) {
-      await drive.permissions.create({
-        fileId: folderId,
-        sendNotificationEmail: false,
-        requestBody: { type: "user", role: "writer", emailAddress: correo },
-        supportsAllDrives: true,
-      });
-    }
+    // Compartir la carpeta con el cliente + los correos internos.
+    await shareAsEditor(drive, folderId, [correo, ...EXTRA_EDITORS].filter(Boolean) as string[]);
   }
 
   return {

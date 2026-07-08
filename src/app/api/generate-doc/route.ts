@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { google } from "googleapis";
 import OpenAI from "openai";
-import { getGoogleAuth, getOrCreateClientFolder } from "@/lib/google";
+import { getGoogleAuth, getOrCreateClientFolder, shareAsEditor, EXTRA_EDITORS } from "@/lib/google";
 
 // POST /api/generate-doc — crea un Google Doc con formato profesional en la
 // carpeta del cliente, lo comparte y devuelve doc_url + folder_url.
@@ -202,17 +202,29 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Compartir el Doc como editor con el cliente.
-    if (correo) {
-      await drive.permissions.create({
-        fileId: documentId,
-        sendNotificationEmail: true,
-        requestBody: { type: "user", role: "writer", emailAddress: correo },
-        supportsAllDrives: true,
-      });
-    }
+    // Compartir el Doc como editor con el cliente (con notificación) + internos.
+    await shareAsEditor(drive, documentId, [correo].filter(Boolean) as string[], true);
+    await shareAsEditor(drive, documentId, EXTRA_EDITORS, true);
 
     const docUrl = `https://docs.google.com/document/d/${documentId}/edit`;
+
+    // Notificación a Slack (no bloqueante).
+    const slack = process.env.SLACK_WEBHOOK_URL;
+    if (slack) {
+      try {
+        const quien = empresa ? `*${fullName}* de *${empresa}*` : `*${fullName}*`;
+        await fetch(slack, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            text: `🎉 ${quien} completó el onboarding.\n📄 Documento: ${docUrl}\n📁 Carpeta de Drive: ${folderUrl}`,
+          }),
+        });
+      } catch {
+        /* no frenamos el flujo si Slack falla */
+      }
+    }
+
     return NextResponse.json({ doc_url: docUrl, folder_url: folderUrl });
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Error generando el documento";
