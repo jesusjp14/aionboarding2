@@ -40,16 +40,24 @@ genuino en su negocio, como una asesora real que quiere entenderlo bien.
 2. Luego di algo como: "Me alegra. Entonces empecemos con tu onboarding; te haré
    unas preguntas para conocer bien tu negocio." Y arranca con la pregunta 1.
 
+# REGLA #1 (CRÍTICA): NUNCA TERMINES LA LLAMADA ANTES DE TIEMPO
+- NO cuelgues ni finalices la llamada hasta haber hecho las 11 preguntas Y dicho
+  la despedida completa del final. Esto es obligatorio.
+- Una pausa o un silencio del cliente NO significa que terminó. Si hace una pausa,
+  espera en silencio; si dudas si terminó de hablar, pregunta "¿algo más?" y espera.
+- Jamás uses la función de terminar llamada en medio de una respuesta ni entre
+  preguntas. Solo puedes terminar en el paso de FINALIZACIÓN, tras la despedida.
+
 # MISIÓN
 Haces preguntas conversacionales para conocer su negocio inmobiliario.
-UNA pregunta a la vez. No avanzas sin una respuesta clara.
+UNA pregunta a la vez. No avanzas sin una respuesta clara. Llevas la cuenta de
+en qué número de pregunta vas (1 a 11) y no te saltas ninguna.
 - Muestra interés real: si la respuesta es vaga, corta o no la entendiste, haz
   UNA repregunta amable para que no se le escape nada (ej: "¿me das un ejemplo?"
   o "¿a qué te refieres exactamente con eso?"). NO inventes preguntas nuevas
   fuera de la lista: solo profundizas o aclaras dentro del mismo tema.
 - Si el cliente duda, dale UN ejemplo corto y espera.
-Al terminar TODAS, te despides y cuelgas. No pides datos técnicos exactos
-(doc de API, FAQs, objeciones van por escrito después).
+No pides datos técnicos exactos (doc de API, FAQs, objeciones van por escrito después).
 
 # PREGUNTAS (en orden)
 1. ¿Cómo es hoy tu proceso comercial? Desde que llega un cliente nuevo, ¿qué pasa?
@@ -108,8 +116,10 @@ const main = async () => {
     await api(`/update-retell-llm/${engine.llm_id}`, "PATCH", {
       general_prompt: ORB_PROMPT,
       begin_message: BEGIN_MESSAGE,
+      model: "gpt-5.1",          // el más inteligente de Retell
+      model_temperature: 0.3,    // más consistente siguiendo las reglas (no termina antes)
     });
-    console.log("  ✓ prompt y begin_message actualizados");
+    console.log("  ✓ prompt, begin_message, model gpt-5.1, temp 0.3 actualizados");
   } else {
     console.log("  ⚠ El agente no usa un Retell LLM (engine:", engine.type, "). Ajusta el prompt manualmente.");
   }
@@ -119,9 +129,11 @@ const main = async () => {
     post_call_analysis_data: POST_CALL,
     // Baja sensibilidad: no se detiene por ruido de fondo / otras voces.
     interruption_sensitivity: 0.3,
+    // Tolera pausas largas al pensar (30s) sin terminar la llamada.
+    end_call_after_silence_ms: 30000,
   });
   console.log("  ✓ post_call_analysis_data:", POST_CALL.length, "variables");
-  console.log("  ✓ interruption_sensitivity: 0.3 (menos sensible al ruido)");
+  console.log("  ✓ interruption_sensitivity: 0.3 · end_call_after_silence_ms: 30000");
   console.log("\n✅ Retell configurado.");
 };
 
