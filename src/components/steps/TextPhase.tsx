@@ -1,9 +1,45 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
-import { Card, Button, inputClass } from "@/components/ui";
+import { useRef, useState } from "react";
+import { Card, Button, Field, inputClass } from "@/components/ui";
 import { Session } from "@/lib/steps";
 
-type Msg = { role: "user" | "assistant"; content: string };
+const FIELDS: { name: string; label: string; placeholder: string }[] = [
+  {
+    name: "crm_api",
+    label: "Documentación de la API de tu CRM",
+    placeholder: "Pega el link a la doc de tu CRM, o escríbelo aquí. Si no lo tienes, escribe 'lo envío luego'.",
+  },
+  {
+    name: "faqs",
+    label: "Preguntas frecuentes de tus clientes (mínimo 10)",
+    placeholder: "Ej: ¿Tienen financiamiento? ¿Cuál es la cuota inicial? ¿El precio incluye acabados? …",
+  },
+  {
+    name: "objeciones",
+    label: "Objeciones comunes y cómo responderlas (mínimo 10)",
+    placeholder: "Ej: 'Está muy caro' → plusvalía y planes de pago. 'Lo voy a pensar' → visita sin compromiso. …",
+  },
+  {
+    name: "info_negocio",
+    label: "Información general del negocio",
+    placeholder: "Nombre, años en el mercado, zonas, diferencial frente a la competencia.",
+  },
+  {
+    name: "info_proyectos",
+    label: "Información de tus proyectos",
+    placeholder: "Por proyecto: nombre, ubicación, tipo, rango de precios, etapa de venta, entrega.",
+  },
+  {
+    name: "datos_obligatorios",
+    label: "Datos que la IA NO puede dejar de captar",
+    placeholder: "Ej: nombre completo, teléfono, presupuesto y proyecto de interés — siempre.",
+  },
+  {
+    name: "casos_especificos",
+    label: "Casos específicos que la IA debe saber manejar",
+    placeholder: "Ej: cliente extranjero que pregunta por crédito, o alguien que pide un humano ya.",
+  },
+];
 
 export default function TextPhase({
   session,
@@ -12,59 +48,11 @@ export default function TextPhase({
   session: Session;
   onDone: (answers: Record<string, string>) => void;
 }) {
-  const [messages, setMessages] = useState<Msg[]>([]);
-  const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [finished, setFinished] = useState<Record<string, string> | null>(null);
+  const [values, setValues] = useState<Record<string, string>>({});
   const [uploads, setUploads] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const [error, setError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    send([], true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
-  }, [messages, loading]);
-
-  const send = async (history: Msg[], kickoff = false, finish = false) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          nombre: session.nombre,
-          finish,
-          messages: kickoff
-            ? [{ role: "user", content: "Hola, ya terminé la llamada. Empecemos con el chat." }]
-            : history,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Error en el chat");
-      if (data.reply) setMessages((m) => [...m, { role: "assistant", content: data.reply }]);
-      if (data.done && data.answers) setFinished(data.answers);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Error inesperado");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const onSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!input.trim() || loading || finished) return;
-    const next: Msg[] = [...messages, { role: "user", content: input.trim() }];
-    setMessages(next);
-    setInput("");
-    send(next);
-  };
 
   const onFiles = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -88,104 +76,62 @@ export default function TextPhase({
     }
   };
 
+  const submit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onDone(values);
+  };
+
   return (
     <Card>
-      <div className="flex items-center gap-2">
-        <span className="inline-flex h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_10px_2px_rgba(52,211,153,0.7)]" />
-        <span className="text-xs font-medium uppercase tracking-widest text-indigo-300">
-          Camila · Chat de datos
-        </span>
-      </div>
-      <h1 className="mt-3 text-2xl font-bold text-white">Últimos datos exactos 💬</h1>
+      <h1 className="text-2xl font-bold text-white">Últimos datos exactos ✍️</h1>
       <p className="mt-2 text-slate-400">
-        Conversemos por escrito. Si tienes documentos (CRM, catálogos), súbelos con 📎.
+        Completa con calma. Esto se suma a lo que conversaste con Camila para armar tu documento.
       </p>
 
-      <div
-        ref={scrollRef}
-        className="mt-6 h-[46vh] min-h-[340px] space-y-3 overflow-y-auto rounded-xl border border-white/10 bg-black/20 p-4"
-      >
-        {messages.map((m, i) => (
-          <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
-            <div
-              className={`max-w-[80%] whitespace-pre-line rounded-2xl px-4 py-2.5 text-sm ${
-                m.role === "user"
-                  ? "bg-gradient-to-r from-indigo-500 to-violet-500 text-white"
-                  : "bg-white/5 text-slate-200 ring-1 ring-white/10"
-              }`}
-            >
-              {m.content}
-            </div>
-          </div>
+      <form onSubmit={submit} className="mt-8 space-y-5">
+        {FIELDS.map((f) => (
+          <Field key={f.name} label={f.label}>
+            <textarea
+              className={`${inputClass} min-h-[90px] resize-y`}
+              value={values[f.name] ?? ""}
+              onChange={(e) => setValues((v) => ({ ...v, [f.name]: e.target.value }))}
+              placeholder={f.placeholder}
+            />
+          </Field>
         ))}
-        {loading && (
-          <div className="flex justify-start">
-            <div className="rounded-2xl bg-white/5 px-4 py-2.5 text-sm text-slate-400 ring-1 ring-white/10">
-              escribiendo…
-            </div>
-          </div>
-        )}
-      </div>
 
-      {uploads.length > 0 && (
-        <div className="mt-3 flex flex-wrap gap-2">
-          {uploads.map((u, i) => (
-            <span
-              key={i}
-              className="inline-flex items-center gap-1 rounded-lg border border-white/10 bg-white/5 px-2.5 py-1 text-xs text-slate-300"
-            >
-              📄 {u}
-            </span>
-          ))}
-        </div>
-      )}
-
-      {error && <p className="mt-3 text-sm text-rose-400">{error}</p>}
-
-      {finished ? (
-        <div className="mt-6">
-          <Button onClick={() => onDone(finished)}>Generar mi documento →</Button>
-        </div>
-      ) : (
-        <>
-          <form onSubmit={onSubmit} className="mt-4 flex gap-2">
-            <input
-              ref={fileRef}
-              type="file"
-              multiple
-              className="hidden"
-              onChange={onFiles}
-            />
-            <button
-              type="button"
-              onClick={() => fileRef.current?.click()}
-              disabled={uploading}
-              title="Adjuntar archivos"
-              className="flex-none rounded-xl border border-white/10 bg-white/[0.04] px-3 text-slate-300 hover:bg-white/10 disabled:opacity-40"
-            >
-              {uploading ? "…" : "📎"}
-            </button>
-            <input
-              className={inputClass}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Escribe tu respuesta…"
-              disabled={loading}
-            />
-            <Button type="submit" disabled={loading || !input.trim()}>
-              Enviar
-            </Button>
-          </form>
+        {/* Subir archivos */}
+        <div className="rounded-xl border border-dashed border-white/15 bg-white/[0.02] p-4">
+          <p className="text-sm font-medium text-slate-300">¿Tienes documentos para adjuntar?</p>
+          <p className="mt-1 text-xs text-slate-500">
+            Catálogos, documentación del CRM, brochures… se guardan en tu carpeta.
+          </p>
+          <input ref={fileRef} type="file" multiple className="hidden" onChange={onFiles} />
           <button
             type="button"
-            onClick={() => send(messages, false, true)}
-            disabled={loading}
-            className="mt-3 text-xs font-medium text-slate-400 underline underline-offset-2 hover:text-slate-200 disabled:opacity-40"
+            onClick={() => fileRef.current?.click()}
+            disabled={uploading}
+            className="mt-3 inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-slate-200 hover:bg-white/10 disabled:opacity-40"
           >
-            Ya no tengo más que agregar · Finalizar y generar documento
+            {uploading ? "Subiendo…" : "📎 Subir archivos"}
           </button>
-        </>
-      )}
+          {uploads.length > 0 && (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {uploads.map((u, i) => (
+                <span
+                  key={i}
+                  className="inline-flex items-center gap-1 rounded-lg border border-white/10 bg-white/5 px-2.5 py-1 text-xs text-slate-300"
+                >
+                  📄 {u}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {error && <p className="text-sm text-rose-400">{error}</p>}
+        <Button type="submit">Enviar y generar mi documento →</Button>
+      </form>
     </Card>
   );
 }
